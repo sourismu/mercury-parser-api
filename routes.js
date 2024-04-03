@@ -1,6 +1,9 @@
 const Router = require('express').Router;
 const router = new Router();
-const Mercury = require('@postlight/mercury-parser');
+const Parser = require('@postlight/parser');
+const ParserCustomizer = require('./customizer');
+
+ParserCustomizer.customize(Parser);
 
 router.route('/').get((req, res) => {
     res.json({
@@ -17,9 +20,23 @@ router.route('/parser').get(async (req, res) => {
             if (typeof req.query.headers !== 'undefined') {
                 headers = JSON.parse(req.query.headers);
             }
-            result = await Mercury.parse(req.query.url, {
+            result = await Parser.parse(req.query.url, {
                 contentType,
                 headers,
+            });
+        } catch (error) {
+            result = { error: true, messages: error.message };
+        }
+    }
+    return res.json(result);
+});
+
+router.route('/parse-html').post(async (req, res) => {
+    let result = { message: 'Invalid request body, both url and html are required' };
+    if (req.body.url && req.body.html) {
+        try {
+            result = await Parser.parse(req.body.url, {
+                html: req.body.html
             });
         } catch (error) {
             result = { error: true, messages: error.message };
